@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Câu Cá Vạn Cân PRO</title>
+
+<style>
+body{margin:0;font-family:Arial;text-align:center;background:#6ec6ff;}
+#game{width:100vw;height:60vh;position:relative;overflow:hidden;background:linear-gradient(#4facfe,#00f2fe);}
+
+.player{position:absolute;bottom:0;left:45%;}
+.fisher{width:40px;height:40px;background:blue;}
+.mage{width:40px;height:40px;background:purple;border-radius:50%;}
+.robot{width:50px;height:30px;background:silver;}
+
+.fish{position:absolute;bottom:90px;}
+.red{background:red;width:40px;height:40px;}
+.yellow{background:gold;width:60px;height:30px;}
+.purple{background:purple;width:50px;height:50px;}
+.green{background:lime;width:30px;height:30px;}
+.boss{background:black;width:80px;height:60px;}
+
+.hpbg{width:60px;height:6px;background:#333;position:absolute;}
+.hp{height:6px;background:red;}
+
+#hook{width:4px;height:120px;background:black;position:absolute;top:0;left:50%;display:none;}
+
+button{margin:3px;padding:6px;}
+</style>
+</head>
+
+<body>
+
+<h3>
+💰 <span id="money">0</span> |
+🎒 <span id="bag">0</span> |
+⭐ <span id="level">1</span> |
+🎣 <span id="dmg">5</span> |
+🏝 <span id="island">1</span>
+</h3>
+
+<div id="game">
+<div id="player" class="player fisher"></div>
+<div id="hook"></div>
+</div>
+
+<button onclick="changeChar()">Đổi nhân vật</button>
+<button onclick="sell()">Bán cá</button>
+<button onclick="upgrade()">Nâng cần (100)</button>
+
+<script>
+
+let game=document.getElementById("game")
+let playerBox=document.getElementById("player")
+
+let player={
+money:0,
+damage:5,
+exp:0,
+level:1,
+char:0,
+bag:0
+}
+
+let chars=[
+{name:"fisher",bonus:2},
+{name:"mage",bonus:0},
+{name:"robot",bonus:5}
+]
+
+function changeChar(){
+player.char++
+if(player.char>=chars.length) player.char=0
+playerBox.className="player "+chars[player.char].name
+}
+
+let fishes=[]
+
+function createFish(){
+
+let fish=document.createElement("div")
+fish.className="fish"
+
+let r=Math.random()
+let hp=20,value=10,type="red"
+
+if(r<0.2){type="red";hp=20;value=10}
+else if(r<0.4){type="yellow";hp=40;value=20}
+else if(r<0.6){type="purple";hp=80;value=40}
+else if(r<0.8){type="green";hp=15;value=15}
+else{type="boss";hp=200;value=100}
+
+fish.classList.add(type)
+
+let hpbg=document.createElement("div")
+hpbg.className="hpbg"
+let hpbar=document.createElement("div")
+hpbar.className="hp"
+hpbg.appendChild(hpbar)
+
+game.appendChild(fish)
+game.appendChild(hpbg)
+
+fishes.push({
+x:Math.random()*window.innerWidth,
+hp:hp,
+max:hp,
+value:value,
+fish:fish,
+hpbar:hpbar,
+hpbg:hpbg,
+speed:1+Math.random()*2
+})
+
+}
+
+for(let i=0;i<7;i++) createFish()
+
+function moveFish(){
+fishes.forEach(f=>{
+f.x+=f.speed
+if(f.x>window.innerWidth) f.x=-80
+
+f.fish.style.left=f.x+"px"
+f.hpbg.style.left=f.x+"px"
+f.hpbg.style.bottom="130px"
+
+f.hpbar.style.width=(f.hp/f.max)*60+"px"
+})
+}
+setInterval(moveFish,30)
+
+let hook=document.getElementById("hook")
+let dropping=false
+
+game.onclick=dropHook
+
+function dropHook(){
+if(dropping)return
+dropping=true
+hook.style.display="block"
+hook.style.top="0px"
+
+let fall=setInterval(()=>{
+let top=parseInt(hook.style.top)
+
+if(top>window.innerHeight*0.55){
+clearInterval(fall)
+hook.style.display="none"
+dropping=false
+}else{
+hook.style.top=top+12+"px"
+hit()
+}
+},20)
+}
+
+function hit(){
+let hookTop=parseInt(hook.style.top)
+let hookX=window.innerWidth/2
+
+fishes.forEach(f=>{
+if(hookTop>window.innerHeight*0.45 && f.x>hookX-40 && f.x<hookX+40){
+
+f.hp-=player.damage+chars[player.char].bonus
+
+if(f.hp<=0){
+player.bag+=1
+player.exp+=10
+f.hp=f.max
+f.x=-80
+levelUp()
+updateUI()
+}
+}
+})
+}
+
+function levelUp(){
+player.level=Math.floor(player.exp/30)+1
+
+if(player.level>=100) island.innerText="3"
+else if(player.level>=50) island.innerText="2"
+else island.innerText="1"
+
+}
+
+function sell(){
+player.money+=player.bag*20
+player.bag=0
+updateUI()
+}
+
+function upgrade(){
+if(player.money>=100){
+player.money-=100
+player.damage+=5
+}
+updateUI()
+}
+
+function updateUI(){
+money.innerText=player.money
+bag.innerText=player.bag
+level.innerText=player.level
+dmg.innerText=player.damage
+}
+
+setInterval(()=>{
+localStorage.setItem("fishPRO",JSON.stringify(player))
+},3000)
+
+let save=JSON.parse(localStorage.getItem("fishPRO"))
+if(save) player=save
+
+updateUI()
+
+</script>
+
+</body>
+</html>
